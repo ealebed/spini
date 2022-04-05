@@ -66,11 +66,7 @@ func listAccount(cmd *cobra.Command, options *listOptions) error {
 		return fmt.Errorf("encountered an error listing accounts, status code: %d", resp.StatusCode)
 	}
 
-	// if options.OutputFormat == "yaml" {
-	// 	output.YamlOutput(accountList)
-	// } else {
 	output.JsonOutput(accountList)
-	// }
 
 	return nil
 }

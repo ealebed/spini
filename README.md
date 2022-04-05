@@ -205,3 +205,11 @@ spini pipeline delete-all --name=spini-test-application --dry-run=false
 
 ---
 Sample definition application(s) properties are in `configuration.json` file repository
+
+---
+
+TODO:
+- Configure colored/formatted output
+- Add tests
+- Configure CI/CD for PR
+- Refactoring custom/hardcoded values to make tool more general

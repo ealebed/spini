@@ -54,7 +54,7 @@ func NewCmdRoot(outWriter, errWriter io.Writer) (*cobra.Command, *GlobalOptions)
 	cmd.PersistentFlags().StringVar(&options.configPath, "config", "", "path to config file (default $HOME/.spin/config)")
 	cmd.PersistentFlags().StringVar(&options.gateEndpoint, "gate-endpoint", "", "Gate (API server) endpoint (default http://localhost:8084)")
 
-	// UI Flags
+	// TODO: configure colored/formatted output
 	// cmd.PersistentFlags().StringVar(&options.OutputFormat, "output", "", "configure output formatting")
 
 	// Other flags
