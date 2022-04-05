@@ -1,0 +1,266 @@
+[
+  {
+    "profiles": [
+      {
+        "profileName": "production",
+        "datacenters": [
+          {
+            "tierName": "gke1",
+            "replicas": 2,
+            "env": [
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xms4608m -Xmx4608m -Dconfig.file=conf/prod.conf -Dspring.config.location=conf/prod.conf"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "1.0",
+                "memory": "5120Mi"
+              }
+            },
+            "livenessProbe": {
+              "type": "file",
+              "delay": 15,
+              "timeoutSeconds": 5,
+              "periodSeconds": 15,
+              "successThreshold": 1,
+              "failureThreshold": 5
+            },
+            "progressDeadline": 60,
+            "podPriority": "high-priority",
+            "chaosMonkey": {
+              "enabled": false
+            }
+          }
+        ]
+      }
+    ],
+    "application": "spini-test-consumer",
+    "image": "redins",
+    "type": "consumer",
+    "envFrom": [
+      "minio-configmap"
+    ],
+    "owners": "team-1",
+    "ownerEmail": "ealebed@gmail.com",
+    "nodePool": "base-pool",
+    "slackChannel": "spinnaker-pipelines",
+    "jenkinsJobName": "firsttestjob",
+    "ports": [
+      {
+        "name": "grpc",
+        "containerPort": 6565
+      },
+      {
+        "name": "metrics",
+        "containerPort": 9113
+      }
+    ],
+    "namespace": "default",
+    "version": "21.11.24-07.20",
+    "skipAutogeneration": true,
+    "restrictExecutionDuringTimeWindow": false,
+    "dependsOn": [
+      {
+        "name": "kafka-config"
+      },
+      {
+        "name": "elastic-config"
+      }
+    ],
+    "strategy": {
+      "type": "Recreate"
+    }
+  },
+  {
+    "profiles": [
+      {
+        "profileName": "production",
+        "datacenters": [
+          {
+            "tierName": "gke1",
+            "replicas": 25,
+            "env": [
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xms4608m -Xmx4608m -Dconfig.file=conf/prod.conf -Dspring.config.location=conf/prod.conf"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "1.0",
+                "memory": "5120Mi"
+              }
+            },
+            "livenessProbe": {
+              "type": "file",
+              "delay": 15,
+              "timeoutSeconds": 5,
+              "periodSeconds": 15,
+              "successThreshold": 1,
+              "failureThreshold": 5
+            },
+            "startupProbe": {
+              "type": "http",
+              "delay": 15,
+              "timeoutSeconds": 5,
+              "periodSeconds": 30,
+              "successThreshold": 1,
+              "failureThreshold": 10,
+              "path": "just/another/path"
+            },
+            "progressDeadline": 60,
+            "podPriority": "high-priority",
+            "chaosMonkey": {
+              "enabled": false
+            }
+          }
+        ]
+      },
+      {
+        "profileName": "beta",
+        "datacenters": [
+          {
+            "tierName": "gke1",
+            "replicas": 1,
+            "env": [
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xms3891m -Xmx3891m -Dconfig.file=conf/beta.conf -Dspring.config.location=conf/beta.conf"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "1.0",
+                "memory": "4096Mi"
+              }
+            },
+            "livenessProbe": {
+              "type": "http",
+              "port": 9113,
+              "delay": 15,
+              "timeoutSeconds": 5,
+              "periodSeconds": 15,
+              "successThreshold": 1,
+              "failureThreshold": 5,
+              "path": "just/another/path"
+            },
+            "progressDeadline": 60,
+            "chaosMonkey": {
+              "enabled": true,
+              "mtbf": "1",
+              "killMode": "random-max-percent",
+              "killValue": "25"
+            }
+          }
+        ]
+      }
+    ],
+    "application": "spini-test-application",
+    "image": "excuse-bot",
+    "type": "service",
+    "envFrom": [
+      "another-one-configmap"
+    ],
+    "owners": "team-2",
+    "ownerEmail": "ealebed@gmail.com",
+    "nodePool": "reserve-pool",
+    "slackChannel": "spinnaker-pipelines",
+    "jenkinsJobName": "secondtestjob",
+    "ports": [
+      {
+        "name": "grpc",
+        "containerPort": 6565
+      },
+      {
+        "name": "metrics",
+        "containerPort": 9113
+      }
+    ],
+    "namespace": "default",
+    "skipAutogeneration": false,
+    "restrictExecutionDuringTimeWindow": false,
+    "dependsOn": [
+      {
+        "name": "kafka-config"
+      },
+      {
+        "name": "GoogleCloudStorage"
+      },
+      {
+        "name": "maxmind"
+      }
+    ],
+    "strategy": {
+      "type": "Recreate"
+    }
+  },
+  {
+    "profiles": [
+      {
+        "profileName": "production",
+        "datacenters": [
+          {
+            "tierName": "gke1",
+            "replicas": 5,
+            "env": [
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xms4608m -Xmx4608m -Dconfig.file=conf/prod.conf -Dspring.config.location=conf/prod.conf"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "1.0",
+                "memory": "5120Mi"
+              }
+            },
+            "livenessProbe": {
+              "type": "http",
+              "delay": 15,
+              "timeoutSeconds": 5,
+              "periodSeconds": 15,
+              "successThreshold": 1,
+              "failureThreshold": 5
+            },
+            "progressDeadline": 60,
+            "podPriority": "high-priority",
+            "chaosMonkey": {
+              "enabled": false
+            }
+          }
+        ]
+      }
+    ],
+    "application": "spini-test-bot",
+    "image": "excuse-bot",
+    "type": "service",
+    "owners": "team-1",
+    "ownerEmail": "ealebed@gmail.com",
+    "nodePool": "base-pool",
+    "slackChannel": "spinnaker-pipelines",
+    "jenkinsJobName": "random-excuse",
+    "ports": [
+      {
+        "name": "grpc",
+        "containerPort": 6565
+      },
+      {
+        "name": "metrics",
+        "containerPort": 9113
+      }
+    ],
+    "namespace": "test",
+    "version": "21.12.02-07.13",
+    "skipAutogeneration": false,
+    "restrictExecutionDuringTimeWindow": false,
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxSurge": "15%",
+        "maxUnavailable": "15%"
+      }
+    }
+  }
+]
