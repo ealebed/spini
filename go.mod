@@ -84,6 +84,6 @@ require (
 	github.com/spinnaker/spin v1.22.0
 	golang.org/x/sys v0.0.0-20220405052023-b1e9470b6e64 // indirect
 	k8s.io/api v0.23.5
-	k8s.io/apimachinery v0.23.5
+	k8s.io/apimachinery v0.23.6
 	sigs.k8s.io/kustomize/kyaml v0.13.6
 )
