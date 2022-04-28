@@ -7,14 +7,14 @@ WORKDIR /go/src/github.com/ealebed/spini
 
 COPY . /go/src/github.com/ealebed/spini
 
-RUN go build -o bin/spini ./
+RUN apk add git && go build -o bin/spini ./
 
 #
 # Runtime
 #
 FROM alpine:3.15
 
-RUN apk update && apk add git
+RUN apk add git
 
 RUN git config --global user.name "Yevhen Lebid" \
     && git config --global user.email "ealebed@gmail.com"
