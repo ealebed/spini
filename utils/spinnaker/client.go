@@ -56,7 +56,7 @@ func CreateApplication(application *types.Application, GateClient *gateclient.Ga
 	return nil
 }
 
-// CreatePipeline parse json file with pipeline config and POST creating зшзудшту task to ORCA endpoint
+// CreatePipeline parse json file with pipeline config and POST creating pipeline task to ORCA endpoint
 func CreatePipeline(pipeline *types.Pipeline, GateClient *gateclient.GatewayClient) error {
 	var pipe *types.Pipeline
 
