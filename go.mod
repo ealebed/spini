@@ -6,7 +6,7 @@ require (
 	github.com/antihax/optional v1.0.0
 	github.com/ealebed/dha v0.1.0
 	github.com/fatih/color v1.13.0
-	github.com/google/go-github/v43 v43.0.0
+	github.com/google/go-github/v44 v44.0.0
 	github.com/google/go-querystring v1.1.0
 	github.com/google/uuid v1.3.0
 	github.com/instrumenta/kubeval v0.16.1
@@ -67,7 +67,7 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f // indirect
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
 	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171 // indirect

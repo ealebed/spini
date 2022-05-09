@@ -16,7 +16,7 @@ limitations under the License.
 
 package types
 
-import "github.com/google/go-github/v43/github"
+import "github.com/google/go-github/v44/github"
 
 // PullRequestOptions stores additional GitHub specific data for creating PR
 type PullRequestOptions struct {

@@ -33,7 +33,7 @@ import (
 	"time"
 
 	"github.com/ealebed/spini/types"
-	"github.com/google/go-github/v43/github"
+	"github.com/google/go-github/v44/github"
 	"github.com/google/go-querystring/query"
 	"golang.org/x/oauth2"
 )
