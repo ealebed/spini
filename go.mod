@@ -14,7 +14,7 @@ require (
 	github.com/spinnaker/spin v1.28.0
 	golang.org/x/oauth2 v0.0.0-20220630143837-2104d58473e0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.25.1
+	k8s.io/api v0.25.2
 	k8s.io/apimachinery v0.25.2
 	sigs.k8s.io/kustomize/kyaml v0.13.9
 )
