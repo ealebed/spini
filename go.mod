@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/antihax/optional v1.0.0
 	github.com/ealebed/dha v0.1.0
-	github.com/fatih/color v1.13.0
+	github.com/fatih/color v1.14.0
 	github.com/google/go-github/v44 v44.1.0
 	github.com/google/go-querystring v1.1.0
 	github.com/google/uuid v1.3.0
@@ -46,8 +46,8 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mitchellh/cli v1.1.4 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
