@@ -10,7 +10,7 @@ require (
 	github.com/google/go-querystring v1.1.0
 	github.com/google/uuid v1.4.0
 	github.com/instrumenta/kubeval v0.16.1
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/spinnaker/spin v1.30.0
 	golang.org/x/oauth2 v0.13.0
 	gopkg.in/yaml.v2 v2.4.0
