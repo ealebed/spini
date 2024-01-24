@@ -8,7 +8,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/google/go-github/v44 v44.1.0
 	github.com/google/go-querystring v1.1.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/instrumenta/kubeval v0.16.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spinnaker/spin v1.30.0
