@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/antihax/optional v1.0.0
 	github.com/ealebed/dha v0.1.0
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.17.0
 	github.com/google/go-github/v44 v44.1.0
 	github.com/google/go-querystring v1.1.0
 	github.com/google/uuid v1.6.0
