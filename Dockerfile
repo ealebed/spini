@@ -1,7 +1,7 @@
 #
 # Builder
 #
-FROM golang:alpine3.15 as builder
+FROM golang:alpine3.20 as builder
 
 WORKDIR /go/src/github.com/ealebed/spini
 
@@ -12,7 +12,7 @@ RUN apk add git && go build -o bin/spini ./
 #
 # Runtime
 #
-FROM alpine:3.15
+FROM alpine:3.20
 
 RUN apk add git
 
