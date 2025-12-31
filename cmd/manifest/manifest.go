@@ -17,8 +17,9 @@ limitations under the License.
 package manifest
 
 import (
-	"github.com/ealebed/spini/cmd"
 	"github.com/spf13/cobra"
+
+	"github.com/ealebed/spini/cmd"
 )
 
 type manifestOptions struct {
@@ -38,7 +39,7 @@ func NewManifestCmd(globalOptions *cmd.GlobalOptions) *cobra.Command {
 		GlobalOptions: globalOptions,
 	}
 
-	cmd := &cobra.Command{
+	cmd := &cobra.Command{ //nolint:gocritic // shadowing cmd is common pattern in cobra
 		Use:     "manifest",
 		Short:   "Working with github repository as manifests storage",
 		Long:    "Working with github repository as manifests storage",

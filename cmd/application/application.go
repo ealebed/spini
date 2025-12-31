@@ -17,8 +17,9 @@ limitations under the License.
 package application
 
 import (
-	"github.com/ealebed/spini/cmd"
 	"github.com/spf13/cobra"
+
+	"github.com/ealebed/spini/cmd"
 )
 
 type applicationOptions struct {
@@ -31,7 +32,7 @@ func NewApplicationCmd(globalOptions *cmd.GlobalOptions) *cobra.Command {
 		GlobalOptions: globalOptions,
 	}
 
-	cmd := &cobra.Command{
+	cmd := &cobra.Command{ //nolint:gocritic // shadowing cmd is common pattern in cobra
 		Use:     "application",
 		Aliases: []string{"app"},
 		Short:   "Working with spinnaker applications",

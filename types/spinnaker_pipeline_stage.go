@@ -65,8 +65,10 @@ type Stage struct {
 // defaultPromoteStage return Stage object with default values for promote to stage pipeline
 func defaultPromoteStage(stage string) *Stage {
 	return &Stage{
-		FailPipeline:                   true,
-		Instructions:                   "Continue deploy docker image\n\n\u003cb\u003e${ trigger['artifacts'].?[type == 'docker/image'].![reference] }\u003c/b\u003e\n\nto " + stage + " environment?",
+		FailPipeline: true,
+		Instructions: "Continue deploy docker image\n\n" +
+			"\u003cb\u003e${ trigger['artifacts'].?[type == 'docker/image'].![reference] }\u003c/b\u003e\n\n" +
+			"to " + stage + " environment?",
 		JudgmentInputs:                 []string{},
 		Name:                           "Manual Judgment",
 		Notifications:                  []Notification{},

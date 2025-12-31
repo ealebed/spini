@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ealebed/spini/pkg/output"
 	"github.com/spf13/cobra"
+
+	"github.com/ealebed/spini/pkg/output"
 )
 
 // getOptions represents options for get command
@@ -32,7 +33,7 @@ type getOptions struct {
 }
 
 // NewGetCmd returns new get pipeline command
-func NewGetCmd(pipelineOptions *pipelineOptions) *cobra.Command {
+func NewGetCmd(pipelineOptions *pipelineOptions) *cobra.Command { //nolint:dupl // similar structure to other command constructors is acceptable
 	options := &getOptions{
 		pipelineOptions: pipelineOptions,
 	}
@@ -50,24 +51,32 @@ func NewGetCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 
 	cmd.Flags().StringVarP(&options.applicationName, "name", "n", "", "Spinnaker application the pipeline belongs to")
 	cmd.Flags().StringVarP(&options.pipelineName, "pipeline", "p", "", "name of the pipeline")
-	cmd.MarkFlagRequired("name")
-	cmd.MarkFlagRequired("pipeline")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
+	if err := cmd.MarkFlagRequired("pipeline"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // getPipeline returns the pipeline with the provided name from the provided application
-func getPipeline(cmd *cobra.Command, options *getOptions) error {
+func getPipeline(_ *cobra.Command, options *getOptions) error {
 	successPayload, resp, err := options.GateClient.ApplicationControllerApi.GetPipelineConfigUsingGET(
 		options.GateClient.Context,
 		options.applicationName,
 		options.pipelineName)
 
+	if resp != nil {
+		defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
+
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp != nil && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("encountered an error getting pipeline in application %s with name %s, status code: %d",
 			options.applicationName,
 			options.pipelineName,

@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ealebed/spini/types"
 	"github.com/spf13/cobra"
 	gate "github.com/spinnaker/spin/gateapi"
+
+	"github.com/ealebed/spini/types"
 )
 
 // enableOptions represents options for enable command
@@ -33,7 +34,7 @@ type enableOptions struct {
 }
 
 // NewEnableCmd returns new enable pipeline command
-func NewEnableCmd(pipelineOptions *pipelineOptions) *cobra.Command {
+func NewEnableCmd(pipelineOptions *pipelineOptions) *cobra.Command { //nolint:dupl // similar structure to other command constructors is acceptable
 	options := &enableOptions{
 		pipelineOptions: pipelineOptions,
 	}
@@ -50,13 +51,15 @@ func NewEnableCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&options.applicationName, "name", "n", "", "Spinnaker application the pipeline belongs to")
-	cmd.MarkFlagRequired("name")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // enablePipeline enable all pipelines in selected application
-func enablePipeline(cmd *cobra.Command, options *enableOptions) error {
+func enablePipeline(_ *cobra.Command, options *enableOptions) error { //nolint:gocyclo // complex business logic requires multiple conditionals
 	if options.DryRun {
 		fmt.Println("[DRY_RUN] \nDisable pipelines from application " + options.applicationName)
 	} else {
@@ -66,30 +69,43 @@ func enablePipeline(cmd *cobra.Command, options *enableOptions) error {
 			options.GateClient.Context,
 			options.applicationName)
 
+		if resp != nil {
+			defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+		}
+
 		if err != nil {
 			return fmt.Errorf("encountered an error listing pipelines for application '%s': %s", options.applicationName, err)
 		}
 
-		if resp.StatusCode != http.StatusOK {
+		if resp != nil && resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("encountered an error listing pipelines for application %s, status code: %d",
 				options.applicationName,
 				resp.StatusCode)
 		}
 
-		prettyListStr, _ := json.MarshalIndent(successListPipelines, "", " ")
+		prettyListStr, err := json.MarshalIndent(successListPipelines, "", " ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal pipeline list: %w", err)
+		}
 
-		json.Unmarshal([]byte(prettyListStr), &lp)
+		if err := json.Unmarshal(prettyListStr, &lp); err != nil {
+			return fmt.Errorf("failed to unmarshal pipeline list: %w", err)
+		}
 		for _, pipeline := range *lp {
 			successPayload, resp, err := options.GateClient.ApplicationControllerApi.GetPipelineConfigUsingGET(
 				options.GateClient.Context,
 				options.applicationName,
 				pipeline.Name)
 
+			if resp != nil {
+				defer resp.Body.Close() //nolint:errcheck,gocritic // acceptable to ignore close errors in defer, defer in loop is intentional
+			}
+
 			if err != nil {
 				return fmt.Errorf("encountered an error getting pipeline in application '%s': %s", options.applicationName, err)
 			}
 
-			if resp.StatusCode != http.StatusOK {
+			if resp != nil && resp.StatusCode != http.StatusOK {
 				return fmt.Errorf("encountered an error getting pipeline in application %s with name %s, status code: %d",
 					options.applicationName,
 					pipeline.Name,
@@ -97,9 +113,14 @@ func enablePipeline(cmd *cobra.Command, options *enableOptions) error {
 			}
 
 			var p *types.Pipeline
-			prettyPipeStr, _ := json.MarshalIndent(successPayload, "", " ")
+			prettyPipeStr, err := json.MarshalIndent(successPayload, "", " ")
+			if err != nil {
+				return fmt.Errorf("failed to marshal pipeline: %w", err)
+			}
 
-			json.Unmarshal([]byte(prettyPipeStr), &p)
+			if err := json.Unmarshal(prettyPipeStr, &p); err != nil {
+				return fmt.Errorf("failed to unmarshal pipeline: %w", err)
+			}
 			if p.Disabled {
 				p.Disabled = false
 			}
@@ -109,11 +130,15 @@ func enablePipeline(cmd *cobra.Command, options *enableOptions) error {
 				&p,
 				&gate.PipelineControllerApiSavePipelineUsingPOSTOpts{})
 
+			if saveResp != nil {
+				defer saveResp.Body.Close() //nolint:errcheck,gocritic // acceptable to ignore close errors in defer, defer in loop is intentional
+			}
+
 			if saveErr != nil {
 				return fmt.Errorf("encountered an error enabling pipeline definition: %v", saveErr)
 			}
 
-			if saveResp.StatusCode != http.StatusOK {
+			if saveResp != nil && saveResp.StatusCode != http.StatusOK {
 				return fmt.Errorf("encountered an error enabling pipeline, status code: %d", saveResp.StatusCode)
 			}
 

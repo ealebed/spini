@@ -21,10 +21,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/ealebed/spini/types"
 	"github.com/ealebed/spini/utils"
 	spin "github.com/ealebed/spini/utils/spinnaker"
-	"github.com/spf13/cobra"
 )
 
 // saveOptions represents options for save command
@@ -58,13 +59,15 @@ func NewSaveCmd(applicationOptions *applicationOptions) *cobra.Command {
 	cmd.Flags().StringVarP(&options.repositoryName, "repo", "r", "", "GitHub repository name to read configuration.json from")
 	cmd.Flags().StringVarP(&options.branch, "branch", "b", "master", "branch to read configuration.json from")
 
-	cmd.MarkFlagRequired("name")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // saveApplication creates application on spinnaker from json-formatted file
-func saveApplication(cmd *cobra.Command, options *saveOptions) error {
+func saveApplication(_ *cobra.Command, options *saveOptions) error {
 	var a *types.Application
 	configResponse := utils.LoadConfiguration(options.localConfig, options.Organization, options.repositoryName, options.branch)
 
@@ -82,10 +85,17 @@ func saveApplication(cmd *cobra.Command, options *saveOptions) error {
 	if options.DryRun {
 		fmt.Println("[DRY_RUN] \nGenerate json config for application: " + options.applicationName)
 
-		pretty, _ := json.MarshalIndent(a, "", " ")
-		utils.WriteFileOnDisk([]byte(pretty), a.Name+".json")
+		pretty, err := json.MarshalIndent(a, "", " ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal application: %w", err)
+		}
+		if err := utils.WriteFileOnDisk(pretty, a.Name+".json"); err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
 	} else {
-		spin.CreateApplication(a, options.GateClient)
+		if err := spin.CreateApplication(a, options.GateClient); err != nil {
+			return fmt.Errorf("failed to create application: %w", err)
+		}
 	}
 
 	return nil

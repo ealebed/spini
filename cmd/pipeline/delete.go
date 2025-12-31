@@ -49,14 +49,18 @@ func NewDeleteCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 
 	cmd.Flags().StringVarP(&options.applicationName, "name", "n", "", "Spinnaker application the pipeline belongs to")
 	cmd.Flags().StringVarP(&options.pipelineName, "pipeline", "p", "", "name pipeline to delete")
-	cmd.MarkFlagRequired("name")
-	cmd.MarkFlagRequired("pipeline")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
+	if err := cmd.MarkFlagRequired("pipeline"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // deletePipeline delete given pipeline in provided application
-func deletePipeline(cmd *cobra.Command, options *deleteOptions) error {
+func deletePipeline(_ *cobra.Command, options *deleteOptions) error {
 	if options.DryRun {
 		fmt.Println("[DRY_RUN] \nDelete pipeline " + options.pipelineName + " from application " + options.applicationName)
 	} else {
@@ -65,11 +69,15 @@ func deletePipeline(cmd *cobra.Command, options *deleteOptions) error {
 			options.applicationName,
 			options.pipelineName)
 
+		if resp != nil {
+			defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+		}
+
 		if err != nil {
 			return fmt.Errorf("encountered an error deleting pipeline '%s' in application '%s': %s", options.pipelineName, options.applicationName, err)
 		}
 
-		if resp.StatusCode != http.StatusOK {
+		if resp != nil && resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("encountered an error deleting pipeline, status code: %d", resp.StatusCode)
 		}
 

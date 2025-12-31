@@ -21,9 +21,10 @@ import (
 	"net/http"
 
 	"github.com/antihax/optional"
-	"github.com/ealebed/spini/pkg/output"
 	"github.com/spf13/cobra"
 	gate "github.com/spinnaker/spin/gateapi"
+
+	"github.com/ealebed/spini/pkg/output"
 )
 
 // listOptions represents options for list command
@@ -42,7 +43,7 @@ func NewListCmd(applicationOptions *applicationOptions) *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "returns list of all spinnaker applications",
-		Long:    "returns list of all spinnaker applications, optinally listed by account(cluster) name",
+		Long:    "returns list of all spinnaker applications, optionally listed by account(cluster) name",
 		Example: "spini application list [--account=...]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return listApplication(cmd, options)
@@ -55,16 +56,20 @@ func NewListCmd(applicationOptions *applicationOptions) *cobra.Command {
 }
 
 // listApplication returns application list from spinnaker
-func listApplication(cmd *cobra.Command, options listOptions) error {
+func listApplication(_ *cobra.Command, options listOptions) error {
 	appList, resp, err := options.GateClient.ApplicationControllerApi.GetAllApplicationsUsingGET(
 		options.GateClient.Context,
 		&gate.ApplicationControllerApiGetAllApplicationsUsingGETOpts{Account: optional.NewString(options.accountName)})
+
+	if resp != nil {
+		defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
 
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp != nil && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("encountered an error listing application, status code: %d", resp.StatusCode)
 	}
 

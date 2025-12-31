@@ -21,9 +21,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/ealebed/spini/types"
 	"github.com/ealebed/spini/utils"
-	"github.com/spf13/cobra"
 )
 
 // deleteOptions represents options for delete command
@@ -57,15 +58,20 @@ func NewDeleteCmd(manifestOptions *manifestOptions) *cobra.Command {
 	cmd.Flags().StringVarP(&options.repositoryName, "repo", "r", "", "GitHub repository name to read configuration.json from")
 	cmd.Flags().StringVarP(&options.branch, "branch", "b", "master", "branch to read configuration.json from")
 
-	cmd.MarkFlagRequired("name")
-	cmd.MarkFlagRequired("repo")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
+	if err := cmd.MarkFlagRequired("repo"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // deleteManifest deletes manifest in github repository
-func deleteManifest(cmd *cobra.Command, options *deleteOptions) error {
+func deleteManifest(_ *cobra.Command, options *deleteOptions) error {
 	var filename string
+	var str []string
 
 	configResponse := utils.LoadConfiguration(options.localConfig, options.Organization, options.repositoryName, options.branch)
 
@@ -99,7 +105,9 @@ func deleteManifest(cmd *cobra.Command, options *deleteOptions) error {
 			CommitBranch:   "update_" + time.Now().Format("2006-01-02-1504"),
 		}
 
-		utils.CreatePullRequest(sourceFiles, PROptions)
+		if err := utils.CreatePullRequest(sourceFiles, PROptions); err != nil {
+			return fmt.Errorf("failed to create pull request: %w", err)
+		}
 
 		fmt.Println("\nManifest(s) deletion succeeded")
 	}

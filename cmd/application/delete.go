@@ -50,13 +50,15 @@ func NewDeleteCmd(applicationOptions *applicationOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&options.applicationName, "name", "n", "", "spinnaker application name to delete")
-	cmd.MarkFlagRequired("name")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // deleteApplication delete the provided application
-func deleteApplication(cmd *cobra.Command, options *deleteOptions) error {
+func deleteApplication(_ *cobra.Command, options *deleteOptions) error {
 	if options.DryRun {
 		fmt.Println("[DRY_RUN] \nDelete application: " + options.applicationName)
 	} else {
@@ -73,12 +75,18 @@ func deleteApplication(cmd *cobra.Command, options *deleteOptions) error {
 			options.applicationName,
 			&gate.ApplicationControllerApiGetApplicationUsingGETOpts{Expand: optional.NewBool(false)})
 
-		if resp != nil && resp.StatusCode == http.StatusNotFound {
-			return fmt.Errorf("application '%s' does not exist, exiting", options.applicationName)
+		if resp != nil {
+			defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+			if resp.StatusCode == http.StatusNotFound {
+				return fmt.Errorf("application '%s' does not exist, exiting", options.applicationName)
+			}
 		}
 
 		if err != nil {
-			return fmt.Errorf("encountered an error checking application existence, status code: %d", resp.StatusCode)
+			if resp != nil {
+				return fmt.Errorf("encountered an error checking application existence, status code: %d", resp.StatusCode)
+			}
+			return err
 		}
 
 		deleteAppTask := map[string]interface{}{
@@ -91,14 +99,18 @@ func deleteApplication(cmd *cobra.Command, options *deleteOptions) error {
 			options.GateClient.Context,
 			deleteAppTask)
 
+		if resp != nil {
+			defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+		}
+
 		if err != nil {
 			return err
 		}
-		if resp.StatusCode != http.StatusOK {
+		if resp != nil && resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("encountered an error deleting application, status code: %d", resp.StatusCode)
 		}
 
-		err = orcaTasks.WaitForSuccessfulTask(options.GateClient, taskRef, 5)
+		err = orcaTasks.WaitForSuccessfulTask(options.GateClient, taskRef)
 		if err != nil {
 			return err
 		}

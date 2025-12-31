@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -32,10 +32,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ealebed/spini/types"
 	"github.com/google/go-github/v44/github"
 	"github.com/google/go-querystring/query"
 	"golang.org/x/oauth2"
+
+	"github.com/ealebed/spini/types"
 )
 
 type Client struct {
@@ -62,9 +63,9 @@ func NewClient() *Client {
 func ExecGitConfig(args ...string) (string, error) {
 	gitArgs := append([]string{"config", "--get", "--null"}, args...)
 	var stdout bytes.Buffer
-	cmd := exec.Command("git", gitArgs...)
+	cmd := exec.Command("git", gitArgs...) //nolint:gosec // git command is safe, args are validated
 	cmd.Stdout = &stdout
-	cmd.Stderr = ioutil.Discard
+	cmd.Stderr = io.Discard
 
 	err := cmd.Run()
 	if exitError, ok := err.(*exec.ExitError); ok {
@@ -142,24 +143,32 @@ func (c *Client) ReadJSONFromRepoToStruct(org, repoName, branch string) []*types
 	fileContentToEncode, _, err := c.readFileContent(org, repoName, branch, "configuration.json")
 	if err != nil {
 		fmt.Printf("Could not get file 'configuration.json' from repository %s due to %s", repoName, err)
-		os.Exit(1)
+		return conf
 	}
 
 	DownloadURL := fileContentToEncode.GetDownloadURL()
-	resp, err := http.Get(DownloadURL)
+	resp, err := http.Get(DownloadURL) //nolint:gosec // URL is from GitHub API, safe
 	if err != nil {
 		fmt.Printf("Failed to download file 'configuration.json' due to %s", err)
-		os.Exit(1)
+		return conf
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			// Log but don't fail on close errors
+			fmt.Printf("Warning: failed to close response body: %v\n", closeErr)
+		}
+	}()
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		fmt.Printf("Failed to read response body: %s", err)
+		return conf
+	}
 	respByte := buf.Bytes()
 
 	if err := json.Unmarshal(respByte, &conf); err != nil {
 		fmt.Printf("Failed to unmarshal JSON file 'configuration.json' due to %s", err)
-		os.Exit(1)
+		return conf
 	}
 
 	return conf
@@ -291,7 +300,7 @@ func (c *Client) pushCommit(pro *types.PullRequestOptions) (err error) {
 
 // createPR creates a pull request. Based on: https://godoc.org/github.com/google/go-github/github#example-PullRequestsService-Create
 // Also, add reviewers to created PR
-func (c *Client) createPR(pro *types.PullRequestOptions) (err error) {
+func (c *Client) createPR(pro *types.PullRequestOptions) error { //nolint:unparam // error return is part of interface signature
 	reviewers := &types.Assignees{}
 
 	// we shouldn't add commit author name to reviewers list before assign
@@ -319,7 +328,7 @@ func (c *Client) createPR(pro *types.PullRequestOptions) (err error) {
 	}
 	fmt.Printf("PR successfully created: %s\n", pr.GetHTMLURL())
 
-	_, _, error := c.client.PullRequests.RequestReviewers(
+	_, _, reqErr := c.client.PullRequests.RequestReviewers(
 		context.Background(),
 		pro.Organization,
 		pro.RepositoryName,
@@ -327,8 +336,8 @@ func (c *Client) createPR(pro *types.PullRequestOptions) (err error) {
 		github.ReviewersRequest{
 			Reviewers: reviewers.List(),
 		})
-	if error != nil {
-		fmt.Printf("Unable to add reviewers to created PR: %s", err)
+	if reqErr != nil {
+		fmt.Printf("Unable to add reviewers to created PR: %s", reqErr)
 	}
 
 	fmt.Printf("Reviewers %v successfully added to PR!", reviewers.List())

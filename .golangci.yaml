@@ -1,0 +1,125 @@
+version: "2"
+
+run:
+  timeout: 5m
+  issues-exit-code: 2
+  tests: false
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - importas
+    - funlen
+    - goconst
+    - gocritic
+    - gocyclo
+    - gosec
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - nolintlint
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  settings:
+    depguard:
+      rules:
+        main:
+          files:
+            - $all
+            - "!$test"
+          allow:
+            - $gostd
+            - github.com/ealebed/spini
+            - github.com/spf13/cobra
+            - github.com/spinnaker/spin
+            - github.com/google/go-github/v44
+            - github.com/antihax/optional
+            - github.com/fatih/color
+            - github.com/ealebed/dha
+            - k8s.io/api
+            - k8s.io/apimachinery
+            - golang.org/x/oauth2
+            - gopkg.in/yaml.v2
+            - github.com/instrumenta/kubeval
+            - github.com/google/uuid
+            - github.com/google/go-querystring
+            - sigs.k8s.io/kustomize/kyaml
+    govet:
+      enable:
+        - nilness
+        - shadow
+    gocyclo:
+      min-complexity: 15
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    misspell:
+      locale: US
+    importas:
+      alias:
+        - pkg: k8s.io/api/core/v1
+          alias: apiv1
+        - pkg: k8s.io/api/apps/v1
+          alias: appsv1
+        - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+          alias: metav1
+        - pkg: github.com/spf13/cobra
+          alias: cobra
+        - pkg: github.com/spinnaker/spin/gateapi
+          alias: gate
+        - pkg: github.com/spinnaker/spin/cmd/gateclient
+          alias: gateclient
+        - pkg: github.com/spinnaker/spin/cmd/orca-tasks
+          alias: orcaTasks
+        - pkg: github.com/ealebed/spini/utils/github
+          alias: git
+        - pkg: github.com/ealebed/spini/utils/spinnaker
+          alias: spin
+        - pkg: github.com/ealebed/dha/pkg/dockerhub
+          alias: dha
+    lll:
+      line-length: 160
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - dupImport # https://github.com/go-critic/go-critic/issues/845
+        - ifElseChain
+        - octalLiteral
+        - rangeValCopy
+        - unnamedResult
+        - whyNoLint
+        - wrapperFunc
+    funlen:
+      lines: -1
+      statements: 50
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes: 
+        - github.com/ealebed/spini
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+

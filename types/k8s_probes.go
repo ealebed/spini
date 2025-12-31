@@ -21,11 +21,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// newLivenessProbe return k8s liveness probe object
-func newLivenessProbe(tier *Datacenter) *apiv1.Probe {
-	probeHandler := apiv1.ProbeHandler{}
+const (
+	probeTypeFile   = "file"
+	probePathHealth = "/health"
+)
 
-	if tier.LivenessProbe.Type == "file" {
+// newLivenessProbe return k8s liveness probe object
+func newLivenessProbe(tier *Datacenter) *apiv1.Probe { //nolint:dupl // similar structure to newStartupProbe is acceptable
+	var probeHandler apiv1.ProbeHandler
+
+	if tier.LivenessProbe.Type == probeTypeFile {
 		probeHandler = apiv1.ProbeHandler{
 			Exec: &apiv1.ExecAction{
 				Command: []string{"cat", "/tmp/live"},
@@ -33,7 +38,7 @@ func newLivenessProbe(tier *Datacenter) *apiv1.Probe {
 		}
 	} else {
 		if tier.LivenessProbe.Path == "" {
-			tier.LivenessProbe.Path = "/health"
+			tier.LivenessProbe.Path = probePathHealth
 		}
 		probeHandler = apiv1.ProbeHandler{
 			HTTPGet: &apiv1.HTTPGetAction{
@@ -55,13 +60,13 @@ func newLivenessProbe(tier *Datacenter) *apiv1.Probe {
 
 // newReadinessProbe return k8s readiness probe object
 func newReadinessProbe(tier *Datacenter) *apiv1.Probe {
-	probeHandler := apiv1.ProbeHandler{}
-
 	if tier.ReadinessProbe == nil {
 		tier.ReadinessProbe = tier.LivenessProbe
 	}
 
-	if tier.LivenessProbe.Type == "file" {
+	var probeHandler apiv1.ProbeHandler
+
+	if tier.LivenessProbe.Type == probeTypeFile {
 		probeHandler = apiv1.ProbeHandler{
 			Exec: &apiv1.ExecAction{
 				Command: []string{"cat", "/tmp/ready"},
@@ -69,7 +74,7 @@ func newReadinessProbe(tier *Datacenter) *apiv1.Probe {
 		}
 	} else {
 		if tier.ReadinessProbe.Path == "" {
-			tier.ReadinessProbe.Path = "/health"
+			tier.ReadinessProbe.Path = probePathHealth
 		}
 		probeHandler = apiv1.ProbeHandler{
 			HTTPGet: &apiv1.HTTPGetAction{
@@ -90,10 +95,10 @@ func newReadinessProbe(tier *Datacenter) *apiv1.Probe {
 }
 
 // newStartupProbe return k8s startup probe object
-func newStartupProbe(tier *Datacenter) *apiv1.Probe {
-	probeHandler := apiv1.ProbeHandler{}
+func newStartupProbe(tier *Datacenter) *apiv1.Probe { //nolint:dupl // similar structure to newLivenessProbe is acceptable
+	var probeHandler apiv1.ProbeHandler
 
-	if tier.StartupProbe.Type == "file" {
+	if tier.StartupProbe.Type == probeTypeFile {
 		probeHandler = apiv1.ProbeHandler{
 			Exec: &apiv1.ExecAction{
 				Command: []string{"cat", "/tmp/started"},
@@ -101,7 +106,7 @@ func newStartupProbe(tier *Datacenter) *apiv1.Probe {
 		}
 	} else {
 		if tier.StartupProbe.Path == "" {
-			tier.StartupProbe.Path = "/health"
+			tier.StartupProbe.Path = probePathHealth
 		}
 		probeHandler = apiv1.ProbeHandler{
 			HTTPGet: &apiv1.HTTPGetAction{
@@ -121,7 +126,7 @@ func newStartupProbe(tier *Datacenter) *apiv1.Probe {
 	}
 }
 
-func getIntOrDefault(value int, defaultValue int) int {
+func getIntOrDefault(value, defaultValue int) int {
 	if value > 0 {
 		return value
 	} else {

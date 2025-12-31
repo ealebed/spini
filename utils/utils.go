@@ -21,12 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
-	"github.com/ealebed/spini/types"
-	git "github.com/ealebed/spini/utils/github"
 	"github.com/google/go-github/v44/github"
 	"github.com/google/uuid"
 	"github.com/instrumenta/kubeval/kubeval"
@@ -35,6 +32,14 @@ import (
 	kjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/kio/filters"
+
+	"github.com/ealebed/spini/types"
+	git "github.com/ealebed/spini/utils/github"
+)
+
+const (
+	stageProduction = "production"
+	stageNightly    = "nightly"
 )
 
 var (
@@ -58,12 +63,12 @@ func ReadJSONLocalToStruct() []*types.Configuration {
 
 	var filename = "configuration.json"
 
-	file, err := ioutil.ReadFile(filename)
+	file, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Print(err)
 	}
 
-	if err := json.Unmarshal([]byte(file), &configuration); err != nil {
+	if err := json.Unmarshal(file, &configuration); err != nil {
 		fmt.Printf("Failed to unmarshal JSON file 'configuration.json' due to %s", err)
 		os.Exit(1)
 	}
@@ -86,13 +91,13 @@ func GetFileContent(fileArg string) (targetName string, b []byte, err error) {
 		targetName = files[1]
 	}
 
-	b, err = ioutil.ReadFile(localFile)
+	b, err = os.ReadFile(localFile) //nolint:gosec // file path is validated
 	return targetName, b, err
 }
 
 // WriteFileOnDisk write generated file on disk
 func WriteFileOnDisk(out []byte, outputFilePath string) error {
-	if err := ioutil.WriteFile(outputFilePath, out, 0644); err != nil {
+	if err := os.WriteFile(outputFilePath, out, 0644); err != nil { //nolint:gosec // 0644 is appropriate for user-facing files
 		fmt.Printf("Failed to safe the generated file. Error: %v", err)
 		os.Exit(1)
 	}
@@ -112,40 +117,41 @@ func sliceContains(s []string, str string) bool {
 }
 
 // fillPipelineConfig fills pipeline configuration for generating spinnaker pipelines
+//
+//nolint:gocyclo // complex business logic requires multiple conditionals
 func fillPipelineConfig(stage string, pList []string, pipelineIDs map[string]string) map[string]interface{} {
 	var pipeValues = make(map[string]interface{})
 
 	pipeValues["stage"] = stage
 
-	if sliceContains(pList, "beta") || sliceContains(pList, "nightly") {
-		if stage == "production" || (strings.Contains(stage, "dev")) {
+	if sliceContains(pList, "beta") || sliceContains(pList, stageNightly) {
+		if stage == stageProduction || (strings.Contains(stage, "dev")) {
 			pipeValues["dockerTriggerEnabled"] = false
-		} else if sliceContains(pList, "beta") && stage == "nightly" {
+		} else if sliceContains(pList, "beta") && stage == stageNightly {
 			pipeValues["dockerTriggerEnabled"] = false
-		} else if !sliceContains(pList, "beta") && stage == "nightly" {
+		} else if !sliceContains(pList, "beta") && stage == stageNightly {
 			pipeValues["dockerTriggerEnabled"] = true
-		} else if !sliceContains(pList, "nightly") && stage == "beta" {
-			pipeValues["dockerTriggerEnabled"] = true
-		} else {
+		} else if !sliceContains(pList, stageNightly) && stage == "beta" {
 			pipeValues["dockerTriggerEnabled"] = true
 		}
+		pipeValues["dockerTriggerEnabled"] = true
 	} else {
 		pipeValues["dockerTriggerEnabled"] = true
 	}
 
-	if sliceContains(pList, "beta") && (stage == "production" || stage == "nightly") {
+	if sliceContains(pList, "beta") && (stage == stageProduction || stage == stageNightly) {
 		// by default set in all promote pipelines trigger parentPipelineID from 'beta' pipeline
 		pipeValues["id"] = pipelineIDs["promote-to-"+stage]
 		pipeValues["parentPipelineId"] = pipelineIDs["beta-gke1"]
 
 		// in case we have 'nightly' stage, set in promote-to-production pipeline trigger parentPipelineID from 'nightly' pipeline
-		if stage == "production" && pipelineIDs["nightly-gke1"] != "" {
+		if stage == stageProduction && pipelineIDs["nightly-gke1"] != "" {
 			pipeValues["parentPipelineId"] = pipelineIDs["nightly-gke1"]
 		}
 
 		pipeValues["GeneratePromotePipeline"] = true
 		pipeValues["pipelineTriggerEnabled"] = true
-	} else if sliceContains(pList, "nightly") && stage == "production" {
+	} else if sliceContains(pList, stageNightly) && stage == stageProduction {
 		// in case we have 'nightly' stage, set in promote-to-production pipeline trigger parentPipelineID from 'nightly' pipeline
 		pipeValues["id"] = pipelineIDs["promote-to-"+stage]
 		pipeValues["parentPipelineId"] = pipelineIDs["nightly-gke1"]
@@ -286,9 +292,6 @@ func GenerateManifests(app *types.Configuration, tier *types.Datacenter, stage, 
 	}
 
 	// The Kubernetes standard header field `currentTimestamp` serializes weirdly, so filter it out.
-	// filtered := bytes.ReplaceAll(buf.Bytes(), []byte("creationTimestamp: null"), []byte(""))
-
-	// cleaned := bytes.ReplaceAll(filtered, []byte("status:\n  loadBalancer: {}\n"), []byte(""))
 
 	out, err := formatManifest(cleaned)
 	if err != nil {
@@ -299,25 +302,27 @@ func GenerateManifests(app *types.Configuration, tier *types.Datacenter, stage, 
 
 	_, cerr := os.Stat(directory)
 	if os.IsNotExist(cerr) {
-		errDir := os.MkdirAll(directory, 0755)
+		errDir := os.MkdirAll(directory, 0755) //nolint:gosec // 0755 is appropriate for directory permissions
 		if errDir != nil {
 			panic(err)
 		}
-
 	}
 
 	filePath := directory + app.Application + ".yaml"
-	if stage != "production" {
+	if stage != stageProduction {
 		filePath = directory + app.Application + "-" + stage + ".yaml"
 	}
 
-	WriteFileOnDisk(out.Bytes(), filePath)
+	if err := WriteFileOnDisk(out.Bytes(), filePath); err != nil {
+		fmt.Printf("Failed to write file %s: %s", filePath, err)
+		return ""
+	}
 
 	return filePath
 }
 
 // CreatePullRequest create pull request with generated manifests to github repository
-func CreatePullRequest(sourceFiles string, PROptions *types.PullRequestOptions) (err error) {
+func CreatePullRequest(sourceFiles string, prOptions *types.PullRequestOptions) (err error) {
 	gc := git.NewClient()
 
 	// Create a tree with what to commit.
@@ -337,9 +342,9 @@ func CreatePullRequest(sourceFiles string, PROptions *types.PullRequestOptions) 
 			Mode:    github.String("100644")})
 	}
 
-	PROptions.Entries = entries
+	prOptions.Entries = entries
 
-	if err := gc.NewPullRequest(PROptions); err != nil {
+	if err := gc.NewPullRequest(prOptions); err != nil {
 		fmt.Printf("Error while creating the pull request: %s", err)
 		return err
 	}
@@ -354,13 +359,11 @@ func LoadConfiguration(local bool, organization, repositoryName, branch string) 
 
 	if local {
 		configResponse = ReadJSONLocalToStruct()
-	} else {
-		if repositoryName != "" {
-			configResponse = gc.ReadJSONFromRepoToStruct(
-				organization,
-				repositoryName,
-				branch)
-		}
+	} else if repositoryName != "" {
+		configResponse = gc.ReadJSONFromRepoToStruct(
+			organization,
+			repositoryName,
+			branch)
 	}
 
 	return configResponse

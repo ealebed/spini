@@ -20,10 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/ealebed/spini/types"
 	"github.com/ealebed/spini/utils"
 	spin "github.com/ealebed/spini/utils/spinnaker"
-	"github.com/spf13/cobra"
 )
 
 // saveAllOptions represents options for save-all command
@@ -59,7 +60,7 @@ func NewSaveAllCmd(applicationOptions *applicationOptions) *cobra.Command {
 }
 
 // saveAllApplication creates spinnaker application from json-formatted files
-func saveAllApplication(cmd *cobra.Command, options *saveAllOptions) error {
+func saveAllApplication(_ *cobra.Command, options *saveAllOptions) error {
 	var appList []*types.Application
 	configResponse := utils.LoadConfiguration(options.localConfig, options.Organization, options.repositoryName, options.branch)
 
@@ -76,12 +77,19 @@ func saveAllApplication(cmd *cobra.Command, options *saveAllOptions) error {
 		for _, app := range appList {
 			fmt.Println("[DRY_RUN] \nGenerate json config for application: \n", app.Name)
 
-			pretty, _ := json.MarshalIndent(app, "", " ")
-			utils.WriteFileOnDisk([]byte(pretty), app.Name+".json")
+			pretty, err := json.MarshalIndent(app, "", " ")
+			if err != nil {
+				return fmt.Errorf("failed to marshal application: %w", err)
+			}
+			if err := utils.WriteFileOnDisk(pretty, app.Name+".json"); err != nil {
+				return fmt.Errorf("failed to write file: %w", err)
+			}
 		}
 	} else {
 		for _, app := range appList {
-			spin.CreateApplication(app, options.GateClient)
+			if err := spin.CreateApplication(app, options.GateClient); err != nil {
+				return fmt.Errorf("failed to create application %s: %w", app.Name, err)
+			}
 		}
 	}
 

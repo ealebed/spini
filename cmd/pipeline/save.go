@@ -21,10 +21,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/ealebed/spini/types"
 	"github.com/ealebed/spini/utils"
 	spin "github.com/ealebed/spini/utils/spinnaker"
-	"github.com/spf13/cobra"
 )
 
 // saveOptions represents options for save command
@@ -58,13 +59,15 @@ func NewSaveCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 	cmd.Flags().StringVarP(&options.repositoryName, "repo", "r", "", "GitHub repository name to read configuration.json from")
 	cmd.Flags().StringVarP(&options.branch, "branch", "b", "master", "branch to read configuration.json from")
 
-	cmd.MarkFlagRequired("name")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // savePipeline creates pipeline on spinnaker application from json-formatted file
-func savePipeline(cmd *cobra.Command, options *saveOptions) error {
+func savePipeline(_ *cobra.Command, options *saveOptions) error {
 	var pipeList []*types.Pipeline
 	configResponse := utils.LoadConfiguration(options.localConfig, options.Organization, options.repositoryName, options.branch)
 
@@ -83,12 +86,19 @@ func savePipeline(cmd *cobra.Command, options *saveOptions) error {
 		for _, pipe := range pipeList {
 			fmt.Println("[DRY_RUN] \nGenerate pipeline: ", pipe.Name)
 
-			pretty, _ := json.MarshalIndent(pipe, "", " ")
-			utils.WriteFileOnDisk([]byte(pretty), pipe.Name+".json")
+			pretty, err := json.MarshalIndent(pipe, "", " ")
+			if err != nil {
+				return fmt.Errorf("failed to marshal pipeline: %w", err)
+			}
+			if err := utils.WriteFileOnDisk(pretty, pipe.Name+".json"); err != nil {
+				return fmt.Errorf("failed to write file: %w", err)
+			}
 		}
 	} else {
 		for _, pipeline := range pipeList {
-			spin.CreatePipeline(pipeline, options.GateClient)
+			if err := spin.CreatePipeline(pipeline, options.GateClient); err != nil {
+				return fmt.Errorf("failed to create pipeline %s: %w", pipeline.Name, err)
+			}
 		}
 	}
 
