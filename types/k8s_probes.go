@@ -79,7 +79,7 @@ func newReadinessProbe(tier *Datacenter) *apiv1.Probe {
 		probeHandler = apiv1.ProbeHandler{
 			HTTPGet: &apiv1.HTTPGetAction{
 				Port: intstr.FromInt(getIntOrDefault(tier.ReadinessProbe.Port, 8080)),
-				Path: tier.LivenessProbe.Path,
+				Path: tier.ReadinessProbe.Path,
 			},
 		}
 	}
