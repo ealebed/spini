@@ -21,14 +21,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ealebed/spini/types"
 	"github.com/spinnaker/spin/cmd/gateclient"
 	orcaTasks "github.com/spinnaker/spin/cmd/orca-tasks"
 	gate "github.com/spinnaker/spin/gateapi"
+
+	"github.com/ealebed/spini/types"
 )
 
 // CreateApplication parse json file with application config and POST creating application task to ORCA endpoint
-func CreateApplication(application *types.Application, GateClient *gateclient.GatewayClient) error {
+func CreateApplication(application *types.Application, gateClient *gateclient.GatewayClient) error {
 	createAppTask := map[string]interface{}{
 		"job": []interface{}{map[string]interface{}{
 			"type":        "createApplication",
@@ -36,17 +37,20 @@ func CreateApplication(application *types.Application, GateClient *gateclient.Ga
 			"user":        "devops"},
 		},
 		"application": application.Name,
-		"description": fmt.Sprintf("Create Application: " + application.Name),
+		"description": fmt.Sprintf("Create Application: %s", application.Name),
 	}
 
-	ref, _, err := GateClient.TaskControllerApi.TaskUsingPOST1(
-		GateClient.Context,
+	ref, resp, err := gateClient.TaskControllerApi.TaskUsingPOST1(
+		gateClient.Context,
 		createAppTask)
+	if resp != nil {
+		defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
 	if err != nil {
 		return err
 	}
 
-	err = orcaTasks.WaitForSuccessfulTask(GateClient, ref, 5)
+	err = orcaTasks.WaitForSuccessfulTask(gateClient, ref)
 	if err != nil {
 		return err
 	}
@@ -57,19 +61,30 @@ func CreateApplication(application *types.Application, GateClient *gateclient.Ga
 }
 
 // CreatePipeline parse json file with pipeline config and POST creating pipeline task to ORCA endpoint
-func CreatePipeline(pipeline *types.Pipeline, GateClient *gateclient.GatewayClient) error {
+//
+//nolint:gocyclo // complex business logic requires multiple conditionals
+func CreatePipeline(pipeline *types.Pipeline, gateClient *gateclient.GatewayClient) error {
 	var pipe *types.Pipeline
 
-	foundPipeline, queryResp, _ := GateClient.ApplicationControllerApi.GetPipelineConfigUsingGET(
-		GateClient.Context,
+	foundPipeline, queryResp, err := gateClient.ApplicationControllerApi.GetPipelineConfigUsingGET(
+		gateClient.Context,
 		pipeline.Application,
 		pipeline.Name)
 
-	if queryResp.StatusCode == http.StatusOK && len(foundPipeline) > 0 {
+	if queryResp != nil {
+		defer queryResp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
+
+	if err == nil && queryResp != nil && queryResp.StatusCode == http.StatusOK && len(foundPipeline) > 0 {
 		fmt.Println("Pipeline " + pipeline.Name + " exists, let's update it!")
 
-		prettyStr, _ := json.MarshalIndent(foundPipeline, "", " ")
-		json.Unmarshal([]byte(prettyStr), &pipe)
+		prettyStr, err := json.MarshalIndent(foundPipeline, "", " ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal pipeline: %w", err)
+		}
+		if err := json.Unmarshal(prettyStr, &pipe); err != nil {
+			return fmt.Errorf("failed to unmarshal pipeline: %w", err)
+		}
 
 		for _, triggerExists := range pipe.Triggers {
 			// let's use Spinnaker's known service-account in triggers
@@ -93,14 +108,18 @@ func CreatePipeline(pipeline *types.Pipeline, GateClient *gateclient.GatewayClie
 		fmt.Println("Pipeline " + pipeline.Name + " doesn't exists, let's create a new one!")
 	}
 
-	saveResp, saveErr := GateClient.PipelineControllerApi.SavePipelineUsingPOST(
-		GateClient.Context,
+	saveResp, saveErr := gateClient.PipelineControllerApi.SavePipelineUsingPOST(
+		gateClient.Context,
 		pipeline,
 		&gate.PipelineControllerApiSavePipelineUsingPOSTOpts{})
 
+	if saveResp != nil {
+		defer saveResp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
+
 	if saveErr != nil {
 		return fmt.Errorf("encountered an error saving pipeline definition: %v", saveErr)
-	} else if saveResp.StatusCode != http.StatusOK {
+	} else if saveResp != nil && saveResp.StatusCode != http.StatusOK {
 		return fmt.Errorf("encountered an error saving pipeline, status code: %d", saveResp.StatusCode)
 	}
 

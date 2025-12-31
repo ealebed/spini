@@ -35,7 +35,7 @@ func String() string {
 	info := color.New(color.Bold, color.FgGreen).SprintFunc()
 
 	if ReleasePhase != "" {
-		return fmt.Sprint(info(fmt.Sprintf("%s-%s", Version, ReleasePhase)))
+		return info(fmt.Sprintf("%s-%s", Version, ReleasePhase))
 	}
-	return fmt.Sprint(info(Version))
+	return info(Version)
 }

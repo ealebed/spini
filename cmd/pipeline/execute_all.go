@@ -24,9 +24,10 @@ import (
 	"strings"
 
 	"github.com/antihax/optional"
-	"github.com/ealebed/spini/types"
 	"github.com/spf13/cobra"
 	gate "github.com/spinnaker/spin/gateapi"
+
+	"github.com/ealebed/spini/types"
 )
 
 // executeAllOptions represents the pipeline execute-all command
@@ -58,7 +59,7 @@ func NewExecuteAllCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 }
 
 // executeAllPipelines initiates execution of all pipelines in the provided application or account(cluster)
-func executeAllPipelines(cmd *cobra.Command, options *executeAllOptions) error {
+func executeAllPipelines(_ *cobra.Command, options *executeAllOptions) error { //nolint:gocyclo // complex business logic requires multiple conditionals
 	var message string
 
 	if options.accountName == "" && options.applicationName == "" {
@@ -82,39 +83,54 @@ func executeAllPipelines(cmd *cobra.Command, options *executeAllOptions) error {
 				options.GateClient.Context,
 				options.applicationName)
 
+			if resp != nil {
+				defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+			}
+
 			if err != nil {
 				return fmt.Errorf("encountered an error listing pipelines for application '%s': %s", options.applicationName, err)
 			}
 
-			if resp.StatusCode != http.StatusOK {
+			if resp != nil && resp.StatusCode != http.StatusOK {
 				return fmt.Errorf("encountered an error listing pipelines for application %s, status code: %d",
 					options.applicationName,
 					resp.StatusCode)
 			}
 
-			prettyListStr, _ := json.MarshalIndent(successListPipelines, "", " ")
+			prettyListStr, err := json.MarshalIndent(successListPipelines, "", " ")
+			if err != nil {
+				return fmt.Errorf("failed to marshal pipeline list: %w", err)
+			}
 
-			json.Unmarshal([]byte(prettyListStr), &lp)
+			if err := json.Unmarshal(prettyListStr, &lp); err != nil {
+				return fmt.Errorf("failed to unmarshal pipeline list: %w", err)
+			}
 			for _, pipeline := range *lp {
-				if !pipeline.Disabled && strings.Contains(pipeline.Name, "deploy-") {
-					resp, err := options.GateClient.PipelineControllerApi.InvokePipelineConfigUsingPOST1(
-						options.GateClient.Context,
-						options.applicationName,
-						pipeline.Name,
-						&gate.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{
-							Trigger: optional.NewInterface(trigger),
-						})
-
-					if err != nil {
-						return fmt.Errorf("execute pipeline failed with response: %v and error: %s", resp, err)
-					}
-
-					if resp.StatusCode != http.StatusAccepted {
-						return fmt.Errorf("encountered an error executing pipeline, status code: %d", resp.StatusCode)
-					}
-
-					fmt.Println("Pipeline " + pipeline.Name + " execution for application " + options.applicationName + " started!")
+				if pipeline.Disabled || !strings.Contains(pipeline.Name, "deploy-") {
+					continue
 				}
+				resp, err := options.GateClient.PipelineControllerApi.InvokePipelineConfigUsingPOST1(
+					options.GateClient.Context,
+					options.applicationName,
+					pipeline.Name,
+					&gate.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{
+						Trigger: optional.NewInterface(trigger),
+					})
+
+				if resp != nil {
+					defer resp.Body.Close() //nolint:errcheck,gocritic // acceptable to ignore close errors in defer, defer in loop is intentional
+				}
+
+				if err != nil {
+					return fmt.Errorf("execute pipeline failed with response: %v and error: %s", resp, err)
+				}
+
+				if resp != nil && resp.StatusCode != http.StatusAccepted {
+					return fmt.Errorf("encountered an error executing pipeline, status code: %d", resp.StatusCode)
+				}
+
+				fmt.Printf("Pipeline %s execution for application %s started!\n",
+					pipeline.Name, options.applicationName)
 			}
 		}
 
@@ -125,12 +141,16 @@ func executeAllPipelines(cmd *cobra.Command, options *executeAllOptions) error {
 					Account: optional.NewString(options.accountName),
 				})
 
-			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("encountered an error listing application, status code: %d", resp.StatusCode)
+			if resp != nil {
+				defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
 			}
 
 			if err != nil {
 				return fmt.Errorf("encountered an error listing application: %s", err)
+			}
+
+			if resp != nil && resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("encountered an error listing application, status code: %d", resp.StatusCode)
 			}
 
 			for _, application := range appList {
@@ -138,42 +158,59 @@ func executeAllPipelines(cmd *cobra.Command, options *executeAllOptions) error {
 				successListPipelines, resp, err := options.GateClient.ApplicationControllerApi.GetPipelineConfigsForApplicationUsingGET(
 					options.GateClient.Context,
 					application.(map[string]interface{})["name"].(string))
+
+				if resp != nil {
+					defer resp.Body.Close() //nolint:errcheck,gocritic // acceptable to ignore close errors in defer, defer in loop is intentional
+				}
+
 				if err != nil {
 					return fmt.Errorf("encountered an error listing pipelines for account(cluster) '%s': %s",
 						application.(map[string]interface{})["name"].(string),
 						err)
 				}
 
-				if resp.StatusCode != http.StatusOK {
+				if resp != nil && resp.StatusCode != http.StatusOK {
 					return fmt.Errorf("encountered an error listing pipelines for account(cluster) %s, status code: %d",
 						application.(map[string]interface{})["name"].(string),
 						resp.StatusCode)
 				}
 
-				prettyListStr, _ := json.MarshalIndent(successListPipelines, "", " ")
+				prettyListStr, err := json.MarshalIndent(successListPipelines, "", " ")
+				if err != nil {
+					return fmt.Errorf("failed to marshal pipeline list: %w", err)
+				}
 
-				json.Unmarshal([]byte(prettyListStr), &lp)
+				if err := json.Unmarshal(prettyListStr, &lp); err != nil {
+					return fmt.Errorf("failed to unmarshal pipeline list: %w", err)
+				}
 				for _, pipeline := range *lp {
-					if strings.Contains(pipeline.Name, options.accountName) {
-						if !pipeline.Disabled && strings.Contains(pipeline.Name, "deploy-") {
-							resp, err := options.GateClient.PipelineControllerApi.InvokePipelineConfigUsingPOST1(
-								options.GateClient.Context,
-								application.(map[string]interface{})["name"].(string),
-								pipeline.Name,
-								&gate.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{
-									Trigger: optional.NewInterface(trigger),
-								})
+					if !strings.Contains(pipeline.Name, options.accountName) {
+						continue
+					}
+					if !pipeline.Disabled && strings.Contains(pipeline.Name, "deploy-") {
+						resp, err := options.GateClient.PipelineControllerApi.InvokePipelineConfigUsingPOST1(
+							options.GateClient.Context,
+							application.(map[string]interface{})["name"].(string),
+							pipeline.Name,
+							&gate.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{
+								Trigger: optional.NewInterface(trigger),
+							})
 
-							if err != nil {
-								return fmt.Errorf("execute pipeline failed with response: %v and error: %s", resp, err)
-							}
-
-							if resp.StatusCode != http.StatusAccepted {
-								return fmt.Errorf("encountered an error executing pipeline, status code: %d", resp.StatusCode)
-							}
-
-							fmt.Println("Pipeline " + pipeline.Name + " execution for application " + application.(map[string]interface{})["name"].(string) + " in cluster " + options.accountName + " started!")
+						if resp != nil {
+							defer resp.Body.Close() //nolint:errcheck,gocritic // acceptable to ignore close errors in defer, defer in loop is intentional
 						}
+
+						if err != nil {
+							return fmt.Errorf("execute pipeline failed with response: %v and error: %s", resp, err)
+						}
+
+						if resp != nil && resp.StatusCode != http.StatusAccepted {
+							return fmt.Errorf("encountered an error executing pipeline, status code: %d", resp.StatusCode)
+						}
+
+						appName := application.(map[string]interface{})["name"].(string)
+						fmt.Printf("Pipeline %s execution for application %s in cluster %s started!\n",
+							pipeline.Name, appName, options.accountName)
 					}
 				}
 			}

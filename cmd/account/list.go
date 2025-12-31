@@ -21,9 +21,10 @@ import (
 	"net/http"
 
 	"github.com/antihax/optional"
-	"github.com/ealebed/spini/pkg/output"
 	"github.com/spf13/cobra"
 	gate "github.com/spinnaker/spin/gateapi"
+
+	"github.com/ealebed/spini/pkg/output"
 )
 
 type listOptions struct {
@@ -53,16 +54,20 @@ func NewListCmd(accountOptions *accountOptions) *cobra.Command {
 }
 
 // listAccount returns account list from spinnaker
-func listAccount(cmd *cobra.Command, options *listOptions) error {
+func listAccount(_ *cobra.Command, options *listOptions) error {
 	accountList, resp, err := options.GateClient.CredentialsControllerApi.GetAccountsUsingGET(
 		options.GateClient.Context,
 		&gate.CredentialsControllerApiGetAccountsUsingGETOpts{Expand: optional.NewBool(options.expand)})
+
+	if resp != nil {
+		defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
 
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp != nil && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("encountered an error listing accounts, status code: %d", resp.StatusCode)
 	}
 

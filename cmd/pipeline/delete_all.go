@@ -30,7 +30,7 @@ type deleteAllOptions struct {
 }
 
 // NewDeleteAllCmd returns new delete all pipeline command
-func NewDeleteAllCmd(pipelineOptions *pipelineOptions) *cobra.Command {
+func NewDeleteAllCmd(pipelineOptions *pipelineOptions) *cobra.Command { //nolint:dupl // similar structure to other command constructors is acceptable
 	options := &deleteAllOptions{
 		pipelineOptions: pipelineOptions,
 	}
@@ -47,22 +47,28 @@ func NewDeleteAllCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&options.applicationName, "name", "n", "", "Spinnaker application the pipeline belongs to")
-	cmd.MarkFlagRequired("name")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // deletePipeline delete the provided pipeline in selected application
-func deleteAllPipelines(cmd *cobra.Command, options *deleteAllOptions) error {
+func deleteAllPipelines(_ *cobra.Command, options *deleteAllOptions) error {
 	successPayload, resp, err := options.GateClient.ApplicationControllerApi.GetPipelineConfigsForApplicationUsingGET(
 		options.GateClient.Context,
 		options.applicationName)
+
+	if resp != nil {
+		defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
 
 	if err != nil {
 		return fmt.Errorf("encountered an error listing pipelines for application '%s': %s", options.applicationName, err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp != nil && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("encountered an error listing pipelines for application %s, status code: %d",
 			options.applicationName,
 			resp.StatusCode)
@@ -79,6 +85,10 @@ func deleteAllPipelines(cmd *cobra.Command, options *deleteAllOptions) error {
 				options.applicationName,
 				object["name"].(string))
 
+			if resp != nil {
+				defer resp.Body.Close() //nolint:errcheck,gocritic // acceptable to ignore close errors in defer, defer in loop is intentional
+			}
+
 			if err != nil {
 				return fmt.Errorf("encountered an error deleting pipeline '%s' in application '%s': %s",
 					object["name"].(string),
@@ -86,7 +96,7 @@ func deleteAllPipelines(cmd *cobra.Command, options *deleteAllOptions) error {
 					err)
 			}
 
-			if resp.StatusCode != http.StatusOK {
+			if resp != nil && resp.StatusCode != http.StatusOK {
 				return fmt.Errorf("encountered an error deleting pipeline, status code: %d", resp.StatusCode)
 			}
 

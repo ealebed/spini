@@ -21,9 +21,10 @@ import (
 	"net/http"
 
 	"github.com/antihax/optional"
-	"github.com/ealebed/spini/pkg/output"
 	"github.com/spf13/cobra"
 	gate "github.com/spinnaker/spin/gateapi"
+
+	"github.com/ealebed/spini/pkg/output"
 )
 
 // getOptions represents options for get command
@@ -54,17 +55,23 @@ func NewGetCmd(applicationOptions *applicationOptions) *cobra.Command {
 	// Note that false here means defaults to false, and flips to true if the flag is present.
 	cmd.PersistentFlags().BoolVarP(&options.expand, "expand", "x", false, "expand app payload to include clusters")
 
-	cmd.MarkFlagRequired("name")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // getApplication returns actual attributes for specified application
-func getApplication(cmd *cobra.Command, options *getOptions) error {
+func getApplication(_ *cobra.Command, options *getOptions) error {
 	app, resp, err := options.GateClient.ApplicationControllerApi.GetApplicationUsingGET(
 		options.GateClient.Context,
 		options.applicationName,
 		&gate.ApplicationControllerApiGetApplicationUsingGETOpts{Expand: optional.NewBool(options.expand)})
+
+	if resp != nil {
+		defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
 
 	if err != nil {
 		return err

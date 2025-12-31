@@ -1,6 +1,6 @@
 module github.com/ealebed/spini
 
-go 1.23
+go 1.25.0
 
 require (
 	github.com/antihax/optional v1.0.0

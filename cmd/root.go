@@ -19,10 +19,12 @@ package cmd
 import (
 	"io"
 
+	"github.com/spf13/cobra"
+	gateclient "github.com/spinnaker/spin/cmd/gateclient"
+	"github.com/spinnaker/spin/cmd/output"
+
 	"github.com/ealebed/spini/cmd/version"
 	git "github.com/ealebed/spini/utils/github"
-	"github.com/spf13/cobra"
-	gate "github.com/spinnaker/spin/cmd/gateclient"
 )
 
 type GlobalOptions struct {
@@ -35,7 +37,7 @@ type GlobalOptions struct {
 	OutputFormat         string
 	DryRun               bool
 
-	GateClient *gate.GatewayClient
+	GateClient *gateclient.GatewayClient
 }
 
 func NewCmdRoot(outWriter, errWriter io.Writer) (*cobra.Command, *GlobalOptions) {
@@ -63,7 +65,8 @@ func NewCmdRoot(outWriter, errWriter io.Writer) (*cobra.Command, *GlobalOptions)
 
 	// Initialize GateClient
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		gateClient, err := gate.NewGateClient(nil, options.gateEndpoint, "", options.configPath, false)
+		ui := output.NewUI(false, false, nil, outWriter, errWriter)
+		gateClient, err := gateclient.NewGateClient(ui, options.gateEndpoint, "", options.configPath, false, false, 0)
 		if err != nil {
 			return err
 		}

@@ -22,6 +22,8 @@ import (
 	dha "github.com/ealebed/dha/pkg/dockerhub"
 )
 
+const stageProduction = "production"
+
 // PipelineConfig represents full pipeline config - fields for the top level object of a spinnaker
 // pipeline. Mostly used for constructing JSON
 type Pipeline struct {
@@ -90,7 +92,7 @@ func NewDeployPipeline(pipe *Configuration, pipeValues map[string]interface{}) *
 	var fullListStageRefIds = []string{}
 	var requiredArtifactIds = []string{organization + "/" + pipe.DockerImage}
 
-	var manifestPath = ""
+	var manifestPath string
 	var expectedArtifacts = []*PipelineExpectedArtifact{}
 	var stages = []*Stage{}
 	var triggers = []*Trigger{}
@@ -118,7 +120,7 @@ func NewDeployPipeline(pipe *Configuration, pipeValues map[string]interface{}) *
 	}
 
 	if pipe.Namespace != "default" {
-		var manifestPath = "datacenters/" + pipeValues["cluster"].(string) + "/" + pipe.Namespace + "/_namespace.yaml"
+		manifestPath = "datacenters/" + pipeValues["cluster"].(string) + "/" + pipe.Namespace + "/_namespace.yaml"
 		expectedArtifacts = append(expectedArtifacts, newManifestPipelineExpectedArtifact(githubContentUrl, manifestPath))
 		stages = append(stages, defaultDeployManifestStage(
 			pipeValues["cluster"].(string),
@@ -132,7 +134,7 @@ func NewDeployPipeline(pipe *Configuration, pipeValues map[string]interface{}) *
 	}
 
 	for _, envFile := range pipe.EnvFrom {
-		var manifestPath = "datacenters/_commons/" + envFile + ".yaml"
+		manifestPath = "datacenters/_commons/" + envFile + ".yaml"
 
 		expectedArtifacts = append(expectedArtifacts, newManifestPipelineExpectedArtifact(githubContentUrl, manifestPath))
 		stages = append(stages, defaultDeployManifestStage(
@@ -147,33 +149,32 @@ func NewDeployPipeline(pipe *Configuration, pipeValues map[string]interface{}) *
 	}
 
 	for _, dependency := range pipe.DependsOn {
-		if strings.HasSuffix(dependency.Name, "-config") {
-			var manifestPath = "datacenters/_commons/" + dependency.Name + ".yaml"
-
-			expectedArtifacts = append(expectedArtifacts, newManifestPipelineExpectedArtifact(githubContentUrl, manifestPath))
-			stages = append(stages, defaultDeployManifestStage(
-				pipeValues["cluster"].(string),
-				pipe.Application,
-				pipe.Namespace,
-				manifestPath,
-				[]string{},
-				[]string{}))
-			expectedArtifactIds = append(expectedArtifactIds, manifestPath)
-			fullListStageRefIds = append(fullListStageRefIds, "Deploy "+manifestPath)
+		if !strings.HasSuffix(dependency.Name, "-config") {
+			continue
 		}
+		manifestPath = "datacenters/_commons/" + dependency.Name + ".yaml"
+
+		expectedArtifacts = append(expectedArtifacts, newManifestPipelineExpectedArtifact(githubContentUrl, manifestPath))
+		stages = append(stages, defaultDeployManifestStage(
+			pipeValues["cluster"].(string),
+			pipe.Application,
+			pipe.Namespace,
+			manifestPath,
+			[]string{},
+			[]string{}))
+		expectedArtifactIds = append(expectedArtifactIds, manifestPath)
+		fullListStageRefIds = append(fullListStageRefIds, "Deploy "+manifestPath)
 	}
 
-	if pipeValues["stage"].(string) == "production" {
+	if pipeValues["stage"].(string) == stageProduction {
 		manifestPath = "datacenters/" + pipeValues["cluster"].(string) + "/" + pipe.Namespace + "/" + pipe.Application + ".yaml"
 	} else {
 		manifestPath = "datacenters/" + pipeValues["cluster"].(string) + "/" + pipe.Namespace + "/" + pipe.Application + "-" + pipeValues["stage"].(string) + ".yaml"
 	}
 
-	expectedArtifacts = append(expectedArtifacts, newDockerPipelineExpectedArtifact(
-		organization,
-		pipe.DockerImage,
-		pipe.Version))
-	expectedArtifacts = append(expectedArtifacts, newManifestPipelineExpectedArtifact(githubContentUrl, manifestPath))
+	expectedArtifacts = append(expectedArtifacts,
+		newDockerPipelineExpectedArtifact(organization, pipe.DockerImage, pipe.Version),
+		newManifestPipelineExpectedArtifact(githubContentUrl, manifestPath))
 	expectedArtifactIds = append(expectedArtifactIds,
 		manifestPath)
 	stages = append(stages, defaultDeployManifestStage(

@@ -33,7 +33,7 @@ type executeOptions struct {
 }
 
 // NewExecuteCmd returns new execute pipeline command
-func NewExecuteCmd(pipelineOptions *pipelineOptions) *cobra.Command {
+func NewExecuteCmd(pipelineOptions *pipelineOptions) *cobra.Command { //nolint:dupl // similar structure to other command constructors is acceptable
 	options := &executeOptions{
 		pipelineOptions: pipelineOptions,
 	}
@@ -51,13 +51,17 @@ func NewExecuteCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 
 	cmd.Flags().StringVarP(&options.applicationName, "name", "n", "", "Spinnaker application the pipeline lives to")
 	cmd.Flags().StringVarP(&options.pipelineName, "pipeline", "p", "", "name pipeline to execute")
-	cmd.MarkFlagRequired("name")
-	cmd.MarkFlagRequired("pipeline")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
+	if err := cmd.MarkFlagRequired("pipeline"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
-func executePipeline(cmd *cobra.Command, options *executeOptions) error {
+func executePipeline(_ *cobra.Command, options *executeOptions) error {
 	if options.DryRun {
 		fmt.Println("[DRY_RUN] \nExecute pipeline " + options.pipelineName + " from application " + options.applicationName)
 	} else {
@@ -68,11 +72,15 @@ func executePipeline(cmd *cobra.Command, options *executeOptions) error {
 			options.pipelineName,
 			&gate.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{Trigger: optional.NewInterface(trigger)})
 
+		if resp != nil {
+			defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+		}
+
 		if err != nil {
 			return fmt.Errorf("execute pipeline failed with response: %v and error: %s", resp, err)
 		}
 
-		if resp.StatusCode != http.StatusAccepted {
+		if resp != nil && resp.StatusCode != http.StatusAccepted {
 			return fmt.Errorf("encountered an error executing pipeline, status code: %d", resp.StatusCode)
 		}
 

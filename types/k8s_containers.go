@@ -26,7 +26,7 @@ import (
 // newContainer return set of k8s container objects
 func newContainer(config *Configuration, tier *Datacenter, organization, stage string) []apiv1.Container {
 	application := config.Application
-	if stage != "production" {
+	if stage != stageProduction {
 		application = config.Application + "-" + stage
 	}
 

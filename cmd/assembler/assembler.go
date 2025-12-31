@@ -17,12 +17,13 @@ limitations under the License.
 package assembler
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/ealebed/spini/cmd"
 	"github.com/ealebed/spini/cmd/account"
 	"github.com/ealebed/spini/cmd/application"
 	"github.com/ealebed/spini/cmd/manifest"
 	"github.com/ealebed/spini/cmd/pipeline"
-	"github.com/spf13/cobra"
 )
 
 // AddSubCommands adds all the subcommands to the rootCmd.

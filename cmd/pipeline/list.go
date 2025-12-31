@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ealebed/spini/pkg/output"
 	"github.com/spf13/cobra"
+
+	"github.com/ealebed/spini/pkg/output"
 )
 
 // listOptions represents options for list command
@@ -31,7 +32,7 @@ type listOptions struct {
 }
 
 // NewListCmd returns new application list command
-func NewListCmd(pipelineOptions *pipelineOptions) *cobra.Command {
+func NewListCmd(pipelineOptions *pipelineOptions) *cobra.Command { //nolint:dupl // similar structure to other command constructors is acceptable
 	options := &listOptions{
 		pipelineOptions: pipelineOptions,
 	}
@@ -48,21 +49,28 @@ func NewListCmd(pipelineOptions *pipelineOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&options.applicationName, "name", "n", "", "Spinnaker application the pipeline belongs to")
-	cmd.MarkFlagRequired("name")
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
 
 // listPipeline returns the pipelines for the provided application
-func listPipeline(cmd *cobra.Command, options *listOptions) error {
+func listPipeline(_ *cobra.Command, options *listOptions) error {
 	successPayload, resp, err := options.GateClient.ApplicationControllerApi.GetPipelineConfigsForApplicationUsingGET(
 		options.GateClient.Context,
 		options.applicationName)
+
+	if resp != nil {
+		defer resp.Body.Close() //nolint:errcheck // acceptable to ignore close errors in defer
+	}
+
 	if err != nil {
 		return fmt.Errorf("encountered an error listing pipelines for application '%s': %s", options.applicationName, err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp != nil && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("encountered an error listing pipelines for application %s, status code: %d",
 			options.applicationName,
 			resp.StatusCode)
