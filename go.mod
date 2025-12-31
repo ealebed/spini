@@ -14,7 +14,7 @@ require (
 	github.com/spinnaker/spin v1.30.0
 	golang.org/x/oauth2 v0.22.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.31.0
+	k8s.io/api v0.35.0
 	k8s.io/apimachinery v0.35.0
 	sigs.k8s.io/kustomize/kyaml v0.21.0
 )
@@ -34,7 +34,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
