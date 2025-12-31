@@ -116,10 +116,9 @@ formatters:
     - goimports
   settings:
     goimports:
-      local-prefixes: 
+      local-prefixes:
         - github.com/ealebed/spini
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-

@@ -25,4 +25,3 @@ repos:
     hooks:
       - id: golangci-lint
         args: [--timeout=4m, --config=.golangci.yaml]
-
