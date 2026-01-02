@@ -7,7 +7,7 @@ require (
 	github.com/ealebed/dha v0.2.0
 	github.com/fatih/color v1.18.0
 	github.com/google/go-github/v44 v44.1.0
-	github.com/google/go-querystring v1.1.0
+	github.com/google/go-querystring v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/instrumenta/kubeval v0.16.1
 	github.com/spf13/cobra v1.10.2
