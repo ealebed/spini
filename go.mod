@@ -15,7 +15,7 @@ require (
 	golang.org/x/oauth2 v0.35.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.35.0
-	k8s.io/apimachinery v0.35.0
+	k8s.io/apimachinery v0.35.1
 	sigs.k8s.io/kustomize/kyaml v0.21.1
 )
 
