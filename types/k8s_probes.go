@@ -33,7 +33,7 @@ func newLivenessProbe(tier *Datacenter) *apiv1.Probe { //nolint:dupl // similar 
 	if tier.LivenessProbe.Type == probeTypeFile {
 		probeHandler = apiv1.ProbeHandler{
 			Exec: &apiv1.ExecAction{
-				Command: []string{"cat", "/tmp/live"},
+				Command: []string{containerProbeExecCat, "/tmp/live"},
 			},
 		}
 	} else {
@@ -69,7 +69,7 @@ func newReadinessProbe(tier *Datacenter) *apiv1.Probe {
 	if tier.LivenessProbe.Type == probeTypeFile {
 		probeHandler = apiv1.ProbeHandler{
 			Exec: &apiv1.ExecAction{
-				Command: []string{"cat", "/tmp/ready"},
+				Command: []string{containerProbeExecCat, "/tmp/ready"},
 			},
 		}
 	} else {
@@ -101,7 +101,7 @@ func newStartupProbe(tier *Datacenter) *apiv1.Probe { //nolint:dupl // similar s
 	if tier.StartupProbe.Type == probeTypeFile {
 		probeHandler = apiv1.ProbeHandler{
 			Exec: &apiv1.ExecAction{
-				Command: []string{"cat", "/tmp/started"},
+				Command: []string{containerProbeExecCat, "/tmp/started"},
 			},
 		}
 	} else {

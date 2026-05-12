@@ -55,7 +55,7 @@ func newVolume(application string, dependencies []DependsOn) []apiv1.Volume {
 
 		if dependency.Name == "maxmind" {
 			listVolumes = append(listVolumes, apiv1.Volume{
-				Name: "geoip-files",
+				Name: volumeNameGeoIPFiles,
 				VolumeSource: apiv1.VolumeSource{
 					EmptyDir: &apiv1.EmptyDirVolumeSource{},
 				},

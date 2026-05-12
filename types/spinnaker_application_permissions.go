@@ -26,9 +26,9 @@ type ApplicationPermissions struct {
 // defaultApplicationPermissions new application permissions object with default values (group 'devops')
 func defaultApplicationPermissions() *ApplicationPermissions {
 	return &ApplicationPermissions{
-		Execute: []string{"devops"},
-		Read:    []string{"devops"},
-		Write:   []string{"devops"},
+		Execute: []string{spinnakerRoleGroupDevops},
+		Read:    []string{spinnakerRoleGroupDevops},
+		Write:   []string{spinnakerRoleGroupDevops},
 	}
 }
 

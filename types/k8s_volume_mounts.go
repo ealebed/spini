@@ -47,7 +47,7 @@ func newVolumeMount(application string, dependencies []DependsOn) []apiv1.Volume
 
 		if dependency.Name == "maxmind" {
 			listVolumeMounts = append(listVolumeMounts, apiv1.VolumeMount{
-				Name:      "geoip-files",
+				Name:      volumeNameGeoIPFiles,
 				MountPath: "/usr/share/GeoIP",
 			})
 		}

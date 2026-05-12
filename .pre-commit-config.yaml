@@ -21,7 +21,7 @@ repos:
         args: [-race]
 
   - repo: https://github.com/golangci/golangci-lint
-    rev: v2.7.0
+    rev: v2.12.2
     hooks:
       - id: golangci-lint
         args: [--timeout=4m, --config=.golangci.yaml]
