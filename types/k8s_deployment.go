@@ -43,13 +43,13 @@ func NewDeployment(config *Configuration, tier *Datacenter, stage, organization 
 			Replicas: int32Ptr(tier.Replicas),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": application,
+					kubernetesLabelKeyApp: application,
 				},
 			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": application,
+						kubernetesLabelKeyApp: application,
 					},
 				},
 				Spec: apiv1.PodSpec{
@@ -82,7 +82,7 @@ func NewDeployment(config *Configuration, tier *Datacenter, stage, organization 
 				Command: []string{"cp", "-a", "/usr/share/GeoIP/.", "/tmp"},
 				VolumeMounts: []apiv1.VolumeMount{
 					{
-						Name:      "geoip-files",
+						Name:      volumeNameGeoIPFiles,
 						MountPath: "/tmp",
 					},
 				},

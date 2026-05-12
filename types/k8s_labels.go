@@ -30,7 +30,7 @@ func newMetadataLabels(application string, chaosConfig *ChaosMonkey) map[string]
 // newTemplateLabels return k8s template labels for deployment object with default chaosMonkey values
 func newTemplateLabels(application string) map[string]string {
 	return map[string]string{
-		"app":                    application,
+		kubernetesLabelKeyApp:    application,
 		"kube-monkey/enabled":    "enabled",
 		"kube-monkey/identifier": application,
 	}

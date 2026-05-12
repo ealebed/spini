@@ -45,7 +45,7 @@ func newAffinity(application, nodepool string) *apiv1.Affinity {
 					LabelSelector: &metav1.LabelSelector{
 						MatchExpressions: []metav1.LabelSelectorRequirement{
 							{
-								Key:      "app",
+								Key:      kubernetesLabelKeyApp,
 								Operator: metav1.LabelSelectorOperator("In"),
 								Values:   []string{application},
 							},

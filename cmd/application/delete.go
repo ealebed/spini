@@ -64,7 +64,7 @@ func deleteApplication(_ *cobra.Command, options *deleteOptions) error {
 	} else {
 		appSpec := map[string]interface{}{
 			"type": "deleteApplication",
-			"application": map[string]interface{}{
+			spinnakerApplicationKey: map[string]interface{}{
 				"name": options.applicationName,
 			},
 			"user": "devops",
@@ -90,9 +90,9 @@ func deleteApplication(_ *cobra.Command, options *deleteOptions) error {
 		}
 
 		deleteAppTask := map[string]interface{}{
-			"job":         []interface{}{appSpec},
-			"application": options.applicationName,
-			"description": fmt.Sprintf("Delete Application: %s", options.applicationName),
+			"job":                   []interface{}{appSpec},
+			spinnakerApplicationKey: options.applicationName,
+			"description":           fmt.Sprintf("Delete Application: %s", options.applicationName),
 		}
 
 		taskRef, resp, err := options.GateClient.TaskControllerApi.TaskUsingPOST1(

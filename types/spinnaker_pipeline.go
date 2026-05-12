@@ -76,7 +76,7 @@ func NewPromotePipeline(pipe *Configuration, pipeValues map[string]interface{}) 
 		LastModifiedBy:       pipe.OwnerEmail,
 		LimitConcurrent:      true,
 		Name:                 "promote-to-" + pipeValues["stage"].(string),
-		Roles:                []string{"devops", pipe.Owners},
+		Roles:                []string{spinnakerRoleGroupDevops, pipe.Owners},
 		SpelEvaluator:        "v4",
 		Stages:               []*Stage{defaultPromoteStage(pipeValues["stage"].(string))},
 		Triggers:             []*Trigger{newPipelineTrigger(organization, pipe.Application, pipe.Owners, pipeValues["parentPipelineId"].(string))},
@@ -207,13 +207,13 @@ func NewDeployPipeline(pipe *Configuration, pipeValues map[string]interface{}) *
 		Level:   "pipeline",
 		Message: map[string]NotificationMessage{
 			"pipeline.complete": {
-				Text: "*Deploy* ${ trigger['artifacts'].?[type == 'docker/image'].![reference] }\n*User:* ${ trigger['user'] }",
+				Text: slackPipelineNotifyDeployText,
 			},
 			"pipeline.failed": {
-				Text: "*Deploy* ${ trigger['artifacts'].?[type == 'docker/image'].![reference] }\n*User:* ${ trigger['user'] }",
+				Text: slackPipelineNotifyDeployText,
 			},
 			"pipeline.starting": {
-				Text: "*Deploy* ${ trigger['artifacts'].?[type == 'docker/image'].![reference] }\n*User:* ${ trigger['user'] }",
+				Text: slackPipelineNotifyDeployText,
 			},
 		},
 		Type: "slack",
@@ -230,7 +230,7 @@ func NewDeployPipeline(pipe *Configuration, pipeValues map[string]interface{}) *
 		LastModifiedBy:       pipe.OwnerEmail,
 		LimitConcurrent:      true,
 		Name:                 "deploy-" + pipeValues["cluster"].(string) + "-dc(" + pipeValues["stage"].(string) + ")",
-		Roles:                []string{"devops", pipe.Owners},
+		Roles:                []string{spinnakerRoleGroupDevops, pipe.Owners},
 		ParameterConfig:      &[]*Parameter{},
 		Notifications:        []Notification{notification},
 		Stages:               stages,

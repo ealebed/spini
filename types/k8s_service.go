@@ -50,7 +50,7 @@ func NewService(application, stage, namespace string, ports []Port) *apiv1.Servi
 			ClusterIP: "None",
 			Ports:     servicePorts,
 			Selector: map[string]string{
-				"app": application,
+				kubernetesLabelKeyApp: application,
 			},
 		},
 	}

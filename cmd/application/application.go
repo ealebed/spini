@@ -22,6 +22,9 @@ import (
 	"github.com/ealebed/spini/cmd"
 )
 
+// spinnakerApplicationKey is the Gate / Orca JSON field and cobra primary command name.
+const spinnakerApplicationKey = "application"
+
 type applicationOptions struct {
 	*cmd.GlobalOptions
 }
@@ -33,7 +36,7 @@ func NewApplicationCmd(globalOptions *cmd.GlobalOptions) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{ //nolint:gocritic // shadowing cmd is common pattern in cobra
-		Use:     "application",
+		Use:     spinnakerApplicationKey,
 		Aliases: []string{"app"},
 		Short:   "Working with spinnaker applications",
 		Long:    "Working with spinnaker applications",
