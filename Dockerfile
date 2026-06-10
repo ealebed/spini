@@ -12,7 +12,7 @@ RUN apk add git && go build -o bin/spini ./
 #
 # Runtime
 #
-FROM alpine:3.23
+FROM alpine:3.24
 
 RUN apk add git
 
