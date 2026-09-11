@@ -206,10 +206,12 @@ spini pipeline delete-all --name=spini-test-application --dry-run=false
 ---
 Sample definition application(s) properties are in `configuration.json` file repository
 
+## Dependabot automation
+Minor and patch Dependabot PRs are approved and squash-merged by a GitHub App after required CI passes. See [Dependabot automation](./docs/dependabot-automation.md).
+
 ---
 
 TODO:
 - Configure colored/formatted output
 - Add tests
-- Configure CI/CD for PR
 - Refactoring custom/hardcoded values to make tool more general
